@@ -37,7 +37,6 @@ typedef struct {
 } thread_data_t;
 
 pthread_barrier_t barrier;
-int global_iterations;
 
 /* Function Prototypes */
 arr_ptr new_array(long int row_len);
@@ -107,7 +106,7 @@ void *SOR_thread_strip(void *arg) {
     double change, total_change;
     int iters = 0;
 
-    while ((total_change / (rowlen * rowlen)) > TOL) {
+    do {
         iters++;
         total_change = 0;
         for (long int i = data->start_row; i < data->end_row; i++) {
@@ -121,7 +120,8 @@ void *SOR_thread_strip(void *arg) {
             }
         }
         pthread_barrier_wait(&barrier);
-    }
+    } while ((total_change / (rowlen * rowlen)) > TOL);
+
     data->iterations = iters;
     pthread_exit(NULL);
 }
@@ -134,7 +134,7 @@ void *SOR_thread_interleaved(void *arg) {
     double change, total_change;
     int iters = 0;
 
-    while ((total_change / (rowlen * rowlen)) > TOL) {
+    do {
         iters++;
         total_change = 0;
         for (long int i = data->thread_id + 1; i < rowlen - 1; i += MAX_THREADS) {
@@ -148,7 +148,8 @@ void *SOR_thread_interleaved(void *arg) {
             }
         }
         pthread_barrier_wait(&barrier);
-    }
+    } while ((total_change / (rowlen * rowlen)) > TOL);
+
     data->iterations = iters;
     pthread_exit(NULL);
 }
@@ -180,6 +181,7 @@ int main(int argc, char *argv[]) {
         thread_data_t thread_data[num_threads];
         pthread_barrier_init(&barrier, NULL, num_threads);
 
+        clock_gettime(CLOCK_REALTIME, &time_start);
         for (int i = 0; i < num_threads; i++) {
             thread_data[i].thread_id = i;
             thread_data[i].v = v0;
@@ -190,25 +192,10 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < num_threads; i++) {
             pthread_join(threads[i], NULL);
         }
+        clock_gettime(CLOCK_REALTIME, &time_stop);
+        strip_time = interval(time_start, time_stop);
         pthread_barrier_destroy(&barrier);
         printf("Strip-Based SOR: %lf seconds\n", strip_time);
-
-        /* Interleaved Row Multithreaded SOR */
-        pthread_barrier_init(&barrier, NULL, num_threads);
-
-        for (int i = 0; i < num_threads; i++) {
-            thread_data[i].thread_id = i;
-            thread_data[i].v = v0;
-            pthread_create(&threads[i], NULL, SOR_thread_interleaved, &thread_data[i]);
-        }
-        for (int i = 0; i < num_threads; i++) {
-            pthread_join(threads[i], NULL);
-        }
-        pthread_barrier_destroy(&barrier);
-
-        clock_gettime(CLOCK_REALTIME, &time_stop);
-        interleaved_time = interval(time_start, time_stop);
-        printf("Interleaved Row SOR: %lf seconds\n", interleaved_time);        
 
         free(v0);
     }
