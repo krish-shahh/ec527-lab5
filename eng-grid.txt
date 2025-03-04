@@ -1,0 +1,76 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+These brief instructions are derived from
+
+    www.bu.edu/engit/knowledge-base/grid/coursework/ 
+    www.bu.edu/engit/knowledge-base/grid/instructions/
+    www.bu.edu/engit/knowledge-base/mountingengnas/
+
+Connect to eng-grid with ssh to one of the two GRID servers:
+
+  ssh your_bu_email@engineering-grid.bu.edu
+  ssh your_bu_email@engineering-grid2.bu.edu
+
+Sometimes one of these fails after a long delay with a "Connection closed"
+message. Try the other; if stuck you can ask enghelp@bu.edu (but they might
+take a while to answer).
+
+Update your bash environment for use with the grid commands:
+
+  source /mnt/nokrb/sge/etc/bash_profile
+
+To run interactively (for short jobs - a few seconds definitely OK)
+
+  qlogin -q interactive.q
+
+
+To find the number of cores on a machine:
+
+  grep cpu.cores /proc/cpuinfo | head -n 1
+
+However it is important to know if the processor has "hyperthreading"
+(hardware support for multiple threads per core). For this reason it
+may be better to look at the "model name" and look it up online. For
+example, in 2021, machines in the queue "interactive.q" were Intel
+Xeon E5-2640 v4:
+
+  hostname ; cat /proc/cpuinfo | grep model.name | uniq
+  bme-compsim-2
+  model name	: Intel(R) Xeon(R) CPU E5-2640 v4 @ 2.40GHz
+
+Looking this up online you can find that they have 10 cores (with
+"hyperthreading" to run 2 simultaneous threads per core).
+
+
+To see a list of all queues and their current usage:
+
+  qstat -g c
+
+(but note that most queues will not be accessible because they are for
+other departments and programs). The best ones to try are
+instruction.q and interactive.q
+
+Notes:
+* The qlogin queues also have priorities and limits, so you may
+  not always get to login to the queue you want.
+* Once logged in to a machine, there may be other users and other
+  jobs running.  In particular, you might not get all of the cores
+  for your job. Use the "w" command and note the "load average"
+  numbers which are in units of whole cores.
+
+For long jobs, follow the instructions in the "grid/instructions" URL
+listed above, look for a heading "Low versus High-Priority Jobs".
+
+For the pthreads and OpenMP assignments your time measurements will be
+fairly worthless if you are on a machine that is also busy doing
+someone else's work.
+  After the "qlogin" command use the shell commands "who" and "w" to
+find out if another person is doing something that might slow the
+system down.
+  Note the "load average" at the top of the "w" command, you want the
+first number to be small (say, less than 0.10) which indicates the
+machine is currently idle. (The other two numbers tell the average
+activity over the past 5 and 15 minutes respectively.)
+  Use "hostname" to find out what machine you are on, and if needed,
+use a different queue (as described above). It is important to get the
+entire CPU for your entire run.
